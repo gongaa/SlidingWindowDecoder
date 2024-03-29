@@ -1,9 +1,9 @@
 import stim
 import numpy as np
 from scipy.sparse import csc_matrix
-from typing import List, FrozenSet, Dict, Tuple, Union
+from typing import List, FrozenSet, Dict
 
-def build_circuit(code, A_list, B_list, p, num_repeat, z_basis=True, use_both=False):
+def build_circuit(code, A_list, B_list, p, num_repeat, z_basis=True, use_both=False, HZH=False):
 
     n = code.N
     a1, a2, a3 = A_list
@@ -48,13 +48,20 @@ def build_circuit(code, A_list, B_list, p, num_repeat, z_basis=True, use_both=Fa
         if repeat:        
             for i in range(n//2):
                 # measurement preparation errors
-                circuit.append("X_ERROR", Z_check_offset + i, p_before_measure_flip_probability)
-                circuit.append("Z_ERROR", X_check_offset + i, p_before_measure_flip_probability)
+                circuit.append("X_ERROR", Z_check_offset + i, p_after_reset_flip_probability)
+                if HZH:
+                    circuit.append("X_ERROR", X_check_offset + i, p_after_reset_flip_probability)
+                    circuit.append("H", [X_check_offset + i])
+                    circuit.append("DEPOLARIZE1", X_check_offset + i, p_after_clifford_depolarization)
+                else:
+                    circuit.append("Z_ERROR", X_check_offset + i, p_after_reset_flip_probability)
                 # identity gate on R data
                 circuit.append("DEPOLARIZE1", R_data_offset + i, p_before_round_data_depolarization)
         else:
             for i in range(n//2):
                 circuit.append("H", [X_check_offset + i])
+                if HZH:
+                    circuit.append("DEPOLARIZE1", X_check_offset + i, p_after_clifford_depolarization)
 
         for i in range(n//2):
             # CNOTs from R data to to Z-checks
@@ -151,9 +158,15 @@ def build_circuit(code, A_list, B_list, p, num_repeat, z_basis=True, use_both=Fa
         
         # Round 8
         for i in range(n//2):
-            circuit.append("Z_ERROR", X_check_offset + i, p_before_measure_flip_probability)
-            circuit.append("MRX", [X_check_offset + i])
-            # identity gates on L data
+            if HZH:
+                circuit.append("H", [X_check_offset + i])
+                circuit.append("DEPOLARIZE1", X_check_offset + i, p_after_clifford_depolarization)
+                circuit.append("X_ERROR", X_check_offset + i, p_before_measure_flip_probability)
+                circuit.append("MR", [X_check_offset + i])
+            else:
+                circuit.append("Z_ERROR", X_check_offset + i, p_before_measure_flip_probability)
+                circuit.append("MRX", [X_check_offset + i])
+            # identity gates on L data, moved to beginning of the round
             # circuit.append("DEPOLARIZE1", L_data_offset + i, p_before_round_data_depolarization)
             
         # X basis detector
@@ -189,6 +202,8 @@ def build_circuit(code, A_list, B_list, p, num_repeat, z_basis=True, use_both=Fa
     circuit += (num_repeat-1) * rep_circuit
 
     for i in range(0, n):
+        # flip before collapsing data qubits
+        # circuit.append("X_ERROR" if z_basis else "Z_ERROR", L_data_offset + i, p_before_measure_flip_probability)
         circuit.append("M" if z_basis else "MX", L_data_offset + i)
         
     pcm = code.hz if z_basis else code.hx
