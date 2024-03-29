@@ -1,6 +1,6 @@
 # Sliding Window with Guided Decimation Guessing (GDG) Decoding
 
-This repo contains the source codes of the paper [Toward Low-latency Iterative Decoding of QLDPC Codes Under Circuit-Level Noise]().
+This repo contains the source codes of the paper [Toward Low-latency Iterative Decoding of QLDPC Codes Under Circuit-Level Noise](https://arxiv.org/pdf/2403.18901.pdf).
 
 You need to install Cython to compile the source codes as follows.
 ```
