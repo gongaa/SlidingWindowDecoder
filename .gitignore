@@ -12,3 +12,4 @@ logs*
 slurm-*
 r00*
 itt-python
+.vscode

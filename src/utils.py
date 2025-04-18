@@ -5,6 +5,7 @@
 """Utility functions and layers for the FEC package."""
 
 import numpy as np
+from collections import deque
 
 def bin2int(arr):
     """Convert binary array to integer.
@@ -512,3 +513,105 @@ def inverse(mat):
     else:
         raise ValueError("This matrix is not invertible. Please provide either a full-rank square\
         matrix or a rectangular matrix with full column rank.")
+
+def hopcroft_karp(adj, U, V):
+    """
+    Hopcroft-Karp maximum matching for bipartite graphs.
+
+    Args:
+        adj (dict): adjacency list from U to list of neighbors in V
+        U (iterable): left vertex set
+        V (iterable): right vertex set
+
+    Returns:
+        dict: matching as a map u->v for matched pairs
+    """
+    INF = float('inf')
+    pair_U = {u: None for u in U}
+    pair_V = {v: None for v in V}
+    dist = {}
+
+    def bfs():
+        queue = deque()
+        for u in U:
+            if pair_U[u] is None:
+                dist[u] = 0
+                queue.append(u)
+            else:
+                dist[u] = INF
+        dist[None] = INF
+
+        while queue:
+            u = queue.popleft()
+            if dist[u] < dist[None]:
+                for v in adj.get(u, []):
+                    pu = pair_V[v]
+                    if pu is None:
+                        dist[None] = dist[u] + 1
+                    elif dist[pu] == INF:
+                        dist[pu] = dist[u] + 1
+                        queue.append(pu)
+        return dist[None] != INF
+
+    def dfs(u):
+        if u is not None:
+            for v in adj.get(u, []):
+                pu = pair_V[v]
+                if pu is None or (dist[pu] == dist[u] + 1 and dfs(pu)):
+                    pair_U[u] = v
+                    pair_V[v] = u
+                    return True
+            dist[u] = INF
+            return False
+        return True
+
+    matching = 0
+    while bfs():
+        for u in U:
+            if pair_U[u] is None and dfs(u):
+                matching += 1
+    return {u: pair_U[u] for u in U if pair_U[u] is not None}
+
+
+def edge_coloring_bipartite(adj_mat):
+    """
+    Edge-color a bipartite graph using Δ colors by iteratively extracting maximum matchings.
+
+    Args:
+        U (iterable): vertices in left partition
+        V (iterable): vertices in right partition
+        edges (list of tuple): list of (u,v) edges with u in U and v in V
+
+    Returns:
+        dict: mapping (u,v) to color index (1..Δ)
+        int: the number of colors used (= max degree)
+    """
+    # Build adjacency list from adjacency matrix
+    num_row, num_col = adj_mat.shape
+    U, V = list(range(num_row)), list(range(num_col))
+    # Build adjacency list copy
+    adj = {u: [] for u in U}
+    for u, v in zip(*adj_mat.nonzero()):
+        adj[u].append(v)
+
+    # Compute maximum degree Δ
+    Delta = max(np.max(adj_mat.sum(axis=0)), np.max(adj_mat.sum(axis=1)))
+
+    # Coloring by repeated matchings
+    color = {}
+    current_adj = {u: list(neighs) for u, neighs in adj.items()}
+    num_colors = 0
+    color_dict = {}
+    for i in range(Delta):
+        color_dict[i] = []
+    while any(current_adj[u] for u in U):
+        num_colors += 1
+        # find a maximum matching
+        M = hopcroft_karp(current_adj, U, V)
+        # assign this matching the new color
+        for u, v in M.items():
+            color[(u, v)] = num_colors
+            color_dict[num_colors-1].append((u,v))
+            current_adj[u].remove(v) # remove colored edge
+    assert num_colors <= Delta
+    return color_dict, num_colors
