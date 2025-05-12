@@ -5,13 +5,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 
-from ldpc import bp_decoder, bposd_decoder
+from ldpc import BpDecoder, BpOsdDecoder
 import time
 from src.utils import rank
 from src.codes_q import create_bivariate_bicycle_codes, create_circulant_matrix
 from src.build_circuit import build_circuit, dem_to_check_matrices
 from src import bpgdg_decoder
-import itt # install see https://github.com/oleksandr-pavlyk/itt-python, you also need to install VTune
+# import itt # install see https://github.com/oleksandr-pavlyk/itt-python, you also need to install VTune
 
 hard_samples = []
 
@@ -147,15 +147,13 @@ def sliding_window_decoder(N, p=0.003, num_repeat=12, num_shots=10000, max_iter=
         c = anchors[top_left+F] # commit region bottom right
 
         if i==num_win-1 and osd:
-            bpd = bposd_decoder(
-                mat, # the parity check matrix
-                error_rate=p, # does not matter because channel_probs is assigned
-                channel_probs=prior, # assign error_rate to each qubit. This will override "error_rate" input variable
-                max_iter=200, # the maximum number of iterations for BP)
-                bp_method="minimum_sum_log",
+            bpd = BpOsdDecoder(
+                mat,
+                channel_probs=list(prior),
+                max_iter=200,
+                bp_method="minimum_sum",
                 ms_scaling_factor=1.0,
-                input_vector_type="syndrome", # "received_vector"
-                osd_method="osd_cs",
+                osd_method="OSD_CS",
                 osd_order=10,
             )
         else:
@@ -187,9 +185,9 @@ def sliding_window_decoder(N, p=0.003, num_repeat=12, num_shots=10000, max_iter=
             else:
 #                 e_hat_osd = bpd.decode(detector_win[j])
                 decoding_start_time = time.perf_counter()
-                itt.resume()
+                # itt.resume()
                 e_hat = bpgdg.decode(detector_win[j])
-                itt.pause()
+                # itt.pause()
 
 #                 pm_osd = llr_prior[e_hat_osd.astype(bool)].sum()
 #                 pm_gdg = llr_prior[e_hat.astype(bool)].sum()
@@ -228,10 +226,10 @@ def sliding_window_decoder(N, p=0.003, num_repeat=12, num_shots=10000, max_iter=
             p_l_per_round = 1-(1-p_l) ** (1/num_repeat)
             print("logical error per round:", p_l_per_round)
         
-        if i==num_win - 1 and osd:
+        if i == num_win-1 and osd:
             break
             
-        if i==num_win - 1 and (not osd):
+        if i == num_win-1 and (not osd):
             i -= 1
             osd = True
             

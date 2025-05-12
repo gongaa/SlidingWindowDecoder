@@ -515,15 +515,16 @@ def inverse(mat):
         matrix or a rectangular matrix with full column rank.")
 
 def hopcroft_karp(adj, U, V):
-    """
-    Hopcroft-Karp maximum matching for bipartite graphs.
+    r"""Hopcroft-Karp maximum matching for bipartite graphs.
 
-    Args:
+    Input
+    ---------
         adj (dict): adjacency list from U to list of neighbors in V
         U (iterable): left vertex set
         V (iterable): right vertex set
 
-    Returns:
+    Output
+    ---------
         dict: matching as a map u->v for matched pairs
     """
     INF = float('inf')
@@ -574,17 +575,23 @@ def hopcroft_karp(adj, U, V):
 
 
 def edge_coloring_bipartite(adj_mat):
-    """
-    Edge-color a bipartite graph using Δ colors by iteratively extracting maximum matchings.
+    r"""Edge-color a bipartite graph by iteratively extracting maximum matchings.
 
-    Args:
+    Input
+    --------
         U (iterable): vertices in left partition
         V (iterable): vertices in right partition
         edges (list of tuple): list of (u,v) edges with u in U and v in V
 
-    Returns:
-        dict: mapping (u,v) to color index (1..Δ)
-        int: the number of colors used (= max degree)
+    Output
+    -------
+        dict: mapping (u,v) to color index (1..num_colors)
+        int: the number of colors used (>= max degree)
+    
+    Note
+    --------
+    This algorithm might use more than Δ+1 colors
+
     """
     # Build adjacency list from adjacency matrix
     num_row, num_col = adj_mat.shape
@@ -613,5 +620,4 @@ def edge_coloring_bipartite(adj_mat):
             color[(u, v)] = num_colors
             color_dict[num_colors-1].append((u,v))
             current_adj[u].remove(v) # remove colored edge
-    assert num_colors <= Delta
     return color_dict, num_colors
