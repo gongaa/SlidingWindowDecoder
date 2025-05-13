@@ -320,7 +320,7 @@ def create_2BGA(n, m, k, a_poly, b_poly, sr=False):
     B = B % 2
     hx = np.hstack((A, B))
     hz = np.hstack((B.T, A.T))
-    return css_code(hx, hz, name_prefix="2GBA", check_css=True)
+    return css_code(hx, hz, name_prefix="2BGA", check_css=True)
 
 
 def find_girth(pcm):
@@ -380,7 +380,7 @@ def gcd_inner(f, g, p=2):
     
     return gcd_inner(r, g, p)
 
-# returns reciprocal of n in finite field of prime p, if p=0 returns 1/n#
+# Returns reciprocal of n in finite field of prime p, if p=0 returns 1/n
 def reciprocal(n, p=0):
     if p == 0:
         return 1/n
@@ -390,8 +390,9 @@ def reciprocal(n, p=0):
     return None
 
 def coeff2poly(coeff):
+    """Example: input [0,1,7], output [1,0,0,0,0,0,1,1] (coefficients in decreasing order of degree)"""
     lead = max(coeff)
-    poly = np.zeros(lead+1)
+    poly = np.zeros(lead+1, dtype=int)
     for i in coeff:
         poly[lead-i] = 1
     return list(poly)
@@ -426,6 +427,56 @@ def create_cycle_assemble_codes(p, sigma):
     B = np.block(block_list)
     hz = np.hstack((B, np.ones((first_half*p,1))))
     return css_code(hx, hz, name_prefix=f"CAMEL", check_css=True)
+
+def strip_leading_zeros(poly):
+    """Remove leading zeros from a polynomial represented as a list of coefficients."""
+    if not poly:
+        return poly
+    i = len(poly) - 1
+    while i >= 0 and poly[i] == 0:
+        i -= 1
+    return poly[:i+1]
+
+def poly_divmod(a, b, p):
+    """
+    Perform polynomial division a / b over the finite field F_p.
+    Input: a and b both list of coefficients, in increasing order of degree
+    Returns: Tuple of quotient and remainder polynomials, both as lists of coefficients.
+    """
+
+    a = strip_leading_zeros(a)
+    b = strip_leading_zeros(b)
+
+    deg_a = len(a) - 1
+    deg_b = len(b) - 1
+    if deg_a < deg_b:
+        return [0], a  # quotient is zero, remainder is a
+
+    inv_lead_b = pow(int(b[-1]), p-2, p) # inverse of leading coeff
+
+    q = [0] * (deg_a - deg_b + 1) # initialize quotient with zeros
+    r = a[:]  # remainder starts as dividend
+
+    while len(r) - 1 >= deg_b and any(r):
+        deg_r = len(r) - 1
+        lead_r = r[-1] # leading coeff of current remainder
+        factor = (lead_r * inv_lead_b) % p # lead_r / lead_b
+        shift = deg_r - deg_b
+        q[shift] = factor
+        for i in range(deg_b + 1):
+            r[shift + i] = (r[shift + i] - factor * b[i]) % p
+
+        r = strip_leading_zeros(r)
+
+    # normalize quotient and remainder
+    q = strip_leading_zeros(q)
+    r = strip_leading_zeros(r)
+    if not q:
+        q = [0]
+    if not r:
+        r = [0]
+
+    return q, r
 
 def multiply_polynomials(a, b, m, primitive_polynomial):
     """Multiply two polynomials modulo the primitive polynomial in GF(2^m)."""

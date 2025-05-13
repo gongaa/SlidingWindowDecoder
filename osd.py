@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 
-from ldpc import bp_decoder, bposd_decoder
+from ldpc import BpDecoder, BpOsdDecoder
 import time
 from src.utils import rank
 from src.codes_q import create_bivariate_bicycle_codes, create_circulant_matrix
@@ -139,16 +139,14 @@ def sliding_window_decoder(N, p=0.003, num_repeat=12, num_shots=10000, max_iter=
         b = anchors[bottom_right]
         c = anchors[top_left+F] # commit region bottom right
         if not shorten:
-            bpd = bposd_decoder(
-                mat, # the parity check matrix
-                error_rate=p, # does not matter because channel_probs is assigned
-                channel_probs=prior, # assign error_rate to each qubit. This will override "error_rate" input variable
-                max_iter=max_iter, # the maximum number of iterations for BP)
-                bp_method="minimum_sum_log",
-                ms_scaling_factor=1.0, # min sum scaling factor. If set to zero the variable scaling factor method is used
-                osd_method="osd_cs",
+            bpd = BpOsdDecoder(
+                mat,
+                channel_probs=prior,
+                max_iter=max_iter,
+                bp_method="minimum_sum",
+                ms_scaling_factor=1.0,
+                osd_method="OSD_CS",
                 osd_order=10, # -1 for no osd (only BP)
-                input_vector_type="syndrome", # "received_vector"
             )
         else:
             bpd = osd_window(
@@ -196,4 +194,4 @@ def sliding_window_decoder(N, p=0.003, num_repeat=12, num_shots=10000, max_iter=
     print("logical error per round:", p_l_per_round)
     
 sliding_window_decoder(N=144, p=0.004, num_repeat=12, W=3, F=1, num_shots=100, max_iter=200, method=1, 
-                       z_basis=True, shorten=True)
+                       z_basis=True, shorten=False)

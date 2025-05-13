@@ -1,6 +1,6 @@
 import numpy as np
 import time
-from ldpc import bposd_decoder
+from ldpc import BpOsdDecoder
 import time
 from src.utils import rank
 from src.codes_q import *
@@ -36,16 +36,14 @@ def data_qubit_noise_decoding(code, p, num_shots=1000, osd_orders=[10], osd_fact
     for order in osd_orders:
         osd_num_err = 0
         osd0_num_err = 0
-        bpd = bposd_decoder(
-            code.hx, # the parity check matrix
-            error_rate=p, # does not matter as channel_prob is set
-            channel_probs=priors, # override "error_rate" input variable
+        bpd = BpOsdDecoder(
+            code.hx,
+            channel_probs=list(priors),
             max_iter=100,
-            bp_method="minimum_sum_log", # messages are not clipped, may have numerical issues
+            bp_method="minimum_sum",
             ms_scaling_factor=osd_factor, # usually {0.5, 0.625, 0.8, 1.0} suffice
-            osd_method="osd_cs", # the OSD method. Choose from:  "osd_e", "osd_cs", "osd0"
+            osd_method="OSD_CS",
             osd_order=order, # use -1 for BP alone
-            input_vector_type="syndrome",
         )
         for i in range(num_shots):
             s = syndrome[i]
