@@ -53,6 +53,8 @@ def build_SHYPS_circuit(r, p, num_repeat, z_basis=True, use_both=False):
     # print(P)
     L_X = np.kron(P, G) # X logicals
     L_Z = np.kron(G, P) # Z logicals
+    assert not np.any(gauge_X @ L_Z.T % 2) # gauge X operators commute with Z logicals
+    assert not np.any(L_X @ gauge_Z.T % 2) # gauge Z operators commute with X logicals
 
     N = n_r ** 2 # number of data qubits, also number of X and Z gauge operators
 

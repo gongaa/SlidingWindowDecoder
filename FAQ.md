@@ -3,14 +3,14 @@
 
 ## 1. How is your BB syndrome extraction circuit different from the [official implementation](https://github.com/sbravyi/BivariateBicycleCodes)?
 
-After uncommenting lines 145,170,206 from `src/build_circuit.py` you should be able to recover their results.
-I wrote this circuit and ran all the relevant numerics before Bravyi et al. updated their paper to version two on arXiv (and released their source code). In the author comments for arXiv v2 they said that they fixed some bugs and hence logical error rate went up. At my time of programming, I tried to match up with their first version, so I removed all possible extra error sources (idling errors and flips before transversal measurement). By extra I mean those do not affect the PCM, but the prior probabilities associated with some columns.
+After uncommenting lines 145, 170, 206 from `src/build_circuit.py` you should be able to recover their results.
+I wrote this circuit and ran all the relevant numerics before Bravyi et al. updated their paper to version two on arXiv (and released their source code). In the author comments for arXiv v2 they said that they fixed some bugs and hence logical error rate went up. At my time of programming, I tried to match up with their first version, so I removed all possible extra error sources (idling errors and flips before transversal measurement). By extra I mean those that do not affect the circuit-level PCM, but the prior probabilities associated with some columns of the PCM.
 
 
 ## 2. Installation
 
 ### 2.1 How do I install the project?
-Currently the following is only guaranteed to work on Linux. I will try to find a solution for MAC users ASAP.
+Currently the following is only guaranteed to work on Linux. I will try to find a solution for MAC users.
 ```
 conda create --name gdg python=3.12
 conda activate gdg
@@ -47,7 +47,9 @@ Switching to GPU could be a solution. In my latency probing of the CUDA BP decod
 
 ### 3.1 How do you tune BP+OSD parameters? 
 
-For the scaling factor, on code-capacity noise (data qubit noise), I try all four valued from $\{0.5, 0.625, 0.8, 1.0\}$ and pick the best one. For BB codes, see Fig. 4 from our paper for the best scaling factors. For circuit-level noise, from my experience $1.0$ is okay, probably because the Tanner graph is highly-irregular. I don't usually tune BP iterations for code-capacity noise, I just set it to 100 or 200. However, for circuit-level noise, since I was doing the shortening trick to the wide circuit-level PCM (see `Sliding Window OSD.ipynb` for details) before running GDG, I did find that if running BP for too many iterations before shortening, error floor will appear.
+For the scaling factor, on code-capacity noise (data qubit noise), I try all four values from {0.5, 0.625, 0.8, 1.0} and pick the best one. For BB codes, see Fig. 4 from our paper for the best scaling factors. For circuit-level noise, from my experience $1.0$ is okay, probably because the Tanner graph is highly-irregular. 
+
+For BP iterations, I just set it to 100~200 for code-capcity noise without any tuning; I think a suitable scaling factor is more important there. However, for circuit-level noise, since I was doing the shortening trick to the wide circuit-level PCM (see `Sliding Window OSD.ipynb` for details) before running GDG, I found that running BP for too many iterations before shortening causes error floor.
 
 ### 3.2 What are the main features of GDG?
 
